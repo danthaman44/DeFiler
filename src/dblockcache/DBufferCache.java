@@ -35,7 +35,7 @@ public class DBufferCache {
 		DBuffer superBlock = getBlock(0); //the super block has ID =0
 		ByteBuffer wrapped = ByteBuffer.wrap(superBlock.contents);
 		nextINodeCounter = wrapped.getInt(); //the id we give the first Inode
-		nextINodeCounter = nextINodeCounter/(Constants.INODES_PER_BLOCK)+1;
+		nextINodeCounter = nextINodeCounter/(Constants.INODES_PER_BLOCK);
 		System.out.println("Next Inode block ID: " + nextINodeCounter);
 		//pulling the blockmap from disk
 		System.out.println("superblock in cache!");
