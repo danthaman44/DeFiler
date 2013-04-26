@@ -28,21 +28,19 @@ public class DBufferCache {
 		maxBlocks = cacheSize;
 		numBlocks = 0;
 		blockMap = new int[Constants.NUM_OF_DATA_BLOCKS];
-		System.out.println("this many data blocks" + Constants.NUM_OF_DATA_BLOCKS);
 	}
 	
-	public void getCounts() throws IOException { //used to initialize superblock data from disk	
+	public int getCounts() throws IOException { //used to initialize superblock data from disk	
 		DBuffer superBlock = getBlock(0); //the super block has ID =0
 		ByteBuffer wrapped = ByteBuffer.wrap(superBlock.contents);
-		nextINodeCounter = wrapped.getInt(); //the id we give the first Inode
-		nextINodeCounter = nextINodeCounter/(Constants.INODES_PER_BLOCK);
-		System.out.println("Next Inode block ID: " + nextINodeCounter);
+		int numberOfFiles = wrapped.getInt(); //the id we give the first Inode
+		nextINodeCounter = 0;
 		//pulling the blockmap from disk
-		System.out.println("superblock in cache!");
 		releaseBlock(superBlock);
+		return numberOfFiles;
 	}
-	
-	public void storeCounts(int numberOfFiles) throws IllegalArgumentException, IOException {
+	//**writes the file counter to a buffer and syncs it
+	public void storeCounts(int numberOfFiles) throws IllegalArgumentException, IOException { 
 		DBuffer superBlock = getBlock(0);
 		byte[] num = ByteBuffer.allocate(4).putInt(numberOfFiles).array();
 		superBlock.write(num, 0, 4);
@@ -50,8 +48,8 @@ public class DBufferCache {
 		releaseBlock(superBlock);
 	}
 	
-	public void getAllMapBlocks() throws IOException {
-		System.out.println("BLock map size: "+ blockMap.length);
+	//**sets blockMap through looped calls to the disk
+	public void getAllMapBlocks() throws IOException { 
 		int offset = 0;
 		int id = Constants.NUM_OF_INODE_BLOCKS+1;
 		int increment = Constants.BLOCK_SIZE/4; //the array size one Dbuffer can store
@@ -61,8 +59,8 @@ public class DBufferCache {
 			id++;
 		}
 	}
-	
-	public void destroy(int id) { //called when a client wants to delete a file
+	//**called when a client wants to delete a file. Changes the appropriate index in blockmap to 0, removes DBuffers for deleted file
+	public void destroy(int id) { 
 		int index = id - Constants.DATA_BLOCK_FIRST;
 		blockMap[index] = 0; //freeing this particular index in the blockmap
 		DBuffer temp  = null;
@@ -75,8 +73,6 @@ public class DBufferCache {
  	}
 	
 	public void storeAllMapBlocks() throws IOException { //write blockmap to a cache buffer, which is then backed up to disk
-		System.out.println("storing block map");
-		System.out.println(Constants.NUM_OF_MAP_BLOCKS*(Constants.BLOCK_SIZE/4));
 		for(int i=0; i<Constants.NUM_OF_MAP_BLOCKS; i++){ // for every block in the map
 			DBuffer freelist = getBlock(Constants.NUM_OF_INODE_BLOCKS+1+i);
 			for(int j=0; j<(Constants.BLOCK_SIZE/4)-10; j++) { // for every int that fits in that block
@@ -99,7 +95,6 @@ public class DBufferCache {
 		DBuffer freelist = getBlock(id);
 		
 		byte[] contents = freelist.contents;
-		//System.out.println("content size: " + contents.length);	
 		for (int i = 0; i < contents.length; i+=4) {
 			byte[] temp = new byte[4];
 			for (int j =0; j < 4; j++) {
@@ -107,12 +102,9 @@ public class DBufferCache {
 			}	
 			ByteBuffer wrapped = ByteBuffer.wrap(temp);	
 			int n = wrapped.getInt();
-			//System.out.print(n + " ");
 			int index = offset + (i/4);
 			if (index >= blockMap.length) //stop writing to blockmap if it is full
 				return;
-			//System.out.println("n = " + n);
-			//System.out.println("Accessing blockMap at index: " + index);
 			blockMap[index] = n;
 		}
 		releaseBlock(freelist);
@@ -139,16 +131,6 @@ public class DBufferCache {
 	 * cannot change.
 	 */
 	public synchronized DBuffer getBlock(int blockID) throws IllegalArgumentException, IOException {
-		//System.out.println("looking for block" + blockID);
-		//System.out.println("I contain buffers" + bufList);
-//		if (blockID == 0)
-//			System.out.println("looking for superblock in disk");
-//		if (blockID >= Constants.NUM_OF_INODE_BLOCKS+1)
-//			System.out.println("looking for blockmap in disk");
-//		
-//		for(DBuffer buf: bufList){
-//			System.out.print(buf.ID + "  ");
-//		}
 		for (int i = 0; i < bufList.size(); i++) {
 			DBuffer current = bufList.get(i);
 			if (current.ID == blockID) {//our cache contains the buffer for the block we want
@@ -166,7 +148,6 @@ public class DBufferCache {
 				return current;
 			}
 		}
-		//System.out.println("couldn't find the block!");
 		//our cache does not contain the buffer currently
 		DBuffer ourBlock = new DBuffer(blockID, false, false);
 		if (numBlocks == maxBlocks) {//our cache is full, we need to evict a block
@@ -174,7 +155,6 @@ public class DBufferCache {
 			bufList.add(0,ourBlock); //add new block to beginning as MRU
 		}
 		else {
-			//System.out.println("adding a block!");
 			bufList.add(0,ourBlock);
 			numBlocks++;
 		}	

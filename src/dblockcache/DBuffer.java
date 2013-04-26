@@ -1,5 +1,6 @@
 package dblockcache;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import virtualdisk.VirtualDisk;
 import common.Constants;
@@ -81,20 +82,14 @@ public class DBuffer {
 
 	public int read(byte[] buffer, int startOffset, int count) {
 		//if (!isValid) return -1;
-		
 		int len = contents.length;
-		System.out.println("my length is" +  len);
 		if (count > len) {count = len-startOffset;}
 		int index = startOffset+count;
-		System.out.println(index);
-		System.out.println(startOffset + "" + count);
 		int j=0;
 		for (int i = startOffset; i<index; i++) {
 			buffer[j] = contents[i];
 			j++;
 		}
-		System.out.println("I am a buffer and I just read");
-		System.out.println("I am reading..." + buffer[0]);
 		return count;
 	}
 
@@ -128,6 +123,22 @@ public class DBuffer {
 	/* An upcall from VirtualDisk layer to fetch the buffer associated with DBuffer object*/
 	public byte[] getBuffer() {
 		return contents;
+	}
+	
+	public String print(){
+		String cont = "";
+		for (int i = 0; i<contents.length; i+=4) {
+			byte[] integer = new byte[4];
+			integer[0] = contents[i];
+			integer[1] = contents[i+1];
+			integer[2] = contents[i+2];
+			integer[3] = contents[i+3];
+			ByteBuffer wrapped = ByteBuffer.wrap(integer);
+	        int file_ID = wrapped.getInt();
+	        cont = cont+ " " + file_ID;
+		}
+		
+        return cont;
 	}
 	
 }

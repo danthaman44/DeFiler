@@ -36,11 +36,14 @@ public class ClientThread extends Thread
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		System.out.println("No files in our system");
+		System.out.println("Printing cache. Should only have superblock and map blocks");
 		for (DBuffer buf: myDfs.myCache.bufList) {
 			System.out.println("BufferID: "+buf.ID);
 		}
 		System.out.println("Checking cache before file creation");
-		System.out.println("Inode block counter: " + myDfs.myCache.nextINodeCounter);
+		System.out.println("Checking block map in cache, should be all 0s");
 		myDfs.myCache.checkMap(0);
 		myDfs.myCache.checkMap(1);
 		myDfs.myCache.checkMap(2);
@@ -49,6 +52,7 @@ public class ClientThread extends Thread
 		
 		
 		byte[] write = new byte[100];
+		System.out.println("Creating four files");
 		DFileID fileID1 = myDfs.createDFile();
 		DFileID fileID2 = myDfs.createDFile();
 		DFileID fileID3 = myDfs.createDFile();
@@ -73,36 +77,22 @@ public class ClientThread extends Thread
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		System.out.println("Checking cache after file creation. Four new buffers should be added");
 		for (DBuffer buf: myDfs.myCache.bufList) {
-			System.out.println("BufferID: "+buf.ID);
+			System.out.println("Buffer ID: "+buf.ID);
 		}
-		System.out.println("Checking cache after file creation");
-		System.out.println("Inode block counter: " + myDfs.myCache.nextINodeCounter);
+		System.out.println("Checking block map in cache, should be all 1s");
 		myDfs.myCache.checkMap(0);
 		myDfs.myCache.checkMap(1);
 		myDfs.myCache.checkMap(2);
 		myDfs.myCache.checkMap(3);
-
-
-		System.out.println("File Map size: "+ myDfs.fileMap.keySet().size());
+		
+		System.out.println("Files in our system");
 		for (int k: myDfs.fileMap.keySet()) {
-			System.out.println("file: "+ k);
+			System.out.println("File id = " + k);
 		}
-		
-		
-		System.out.println("Deleting a file");
-		DFileID fileID = new DFileID(1);
-		myDfs.destroyDFile(fileID);
-		System.out.println("Checking cache after file deletion");
-		System.out.println("Inode block counter: " + myDfs.myCache.nextINodeCounter);
-		myDfs.myCache.checkMap(0);
-		myDfs.myCache.checkMap(1);
-		myDfs.myCache.checkMap(2);
-		myDfs.myCache.checkMap(3);
-		for (DBuffer buf: myDfs.myCache.bufList) {
-			System.out.println("BufferID: "+buf.ID);
-		}
-		
+
 		try {
 			System.out.println("DFS saving contents");
 		    myDfs.save();
